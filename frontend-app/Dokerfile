@@ -1,0 +1,28 @@
+
+# Usa la imagen base de Node.js para construir el frontend
+FROM node:18-alpine AS builder
+
+# Establece el directorio de trabajo dentro del contenedor
+WORKDIR /app
+
+# Copia los archivos de dependencias y los instala
+COPY package.json package-lock.json ./
+RUN npm install
+
+# Copia el resto del código del proyecto
+COPY . .
+
+# Compila la aplicación con Vite
+RUN npm run build
+
+# Usa Nginx para servir la aplicación en producción
+FROM nginx:alpine
+
+# Copia los archivos de la compilación al servidor web
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Expone el puerto 80 para el tráfico HTTP
+EXPOSE 80
+
+# Comando por defecto que ejecutará Nginx
+CMD ["nginx", "-g", "daemon off;"]

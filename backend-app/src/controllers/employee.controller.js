@@ -29,12 +29,23 @@ const getEmployees = async (req, res) => {
       };
     }
 
+    // don't include password in response
     const employees = await prisma.employee.findMany({
       where,
-      skip,
       take,
-      orderBy: { id: "desc" },
-      include: { user: true },
+      skip,
+      select: {
+        id: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        hireDate: true,
+        salary: true,
+      },
     });
 
     const total = await prisma.employee.count({ where });
@@ -64,24 +75,15 @@ const getEmployees = async (req, res) => {
  * @returns {Promise<void>}
  */
 const createEmployee = async (req, res) => {
-  const { name, email, password, role, hireDate, salary } = req.body;
+  const { userId, hireDate, salary } = req.body;
+
+  console.log("Datos de creacion de empleado", req.body);
 
   try {
-    // Check if the user already exists
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ message: "Email already registered" });
-    }
-
-    // Create user in the Users table
-    const user = await prisma.user.create({
-      data: { name, email, password, role },
-    });
-
     // Create the employee linked to the user
     const employee = await prisma.employee.create({
       data: {
-        userId: user.id,
+        userId: parseInt(userId),
         hireDate: new Date(hireDate),
         salary: parseFloat(salary),
       },
